@@ -1,10 +1,8 @@
 import socket
-import pygame
 import pickle
 #INTERN
 import constant
 import code
-import extra
 from serverpacket import ServerPacket
 from vector import Vector
 from clientpacket import ClientPacket
