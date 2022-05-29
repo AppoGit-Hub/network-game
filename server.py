@@ -8,6 +8,7 @@ import extra
 from serverpacket import ServerPacket
 from vector import Vector
 from clientpacket import ClientPacket
+from rectangle import Rectangle
 
 def clamp(value, min, max):
     if value < min:
@@ -38,7 +39,7 @@ while True:
             server.sendto(pickle.dumps(ServerPacket(client_packet.id, True, None)), addr)
 
         case code.POSITION_CHANGED:
-            rectangle : pygame.Rect = client_packet.data
+            rectangle : Rectangle = client_packet.data
             server_packet = ServerPacket(client_packet.id, True, Vector(rectangle.x, rectangle.y))
             x_correct = 0 <= rectangle.x and rectangle.x <= (constant.RESOLUTION_WIDTH - rectangle.width)
             y_correct = 0 <= rectangle.y and rectangle.y <= (constant.RESOLUTION_HEIGHT - rectangle.height)

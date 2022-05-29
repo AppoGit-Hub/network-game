@@ -7,6 +7,7 @@ import pygame
 from serverpacket import ServerPacket
 from vector import Vector
 from clientpacket import ClientPacket
+from rectangle import Rectangle
 
 class Client:
     def __init__(self):
@@ -61,7 +62,7 @@ class Client:
             rectangle_width = 50
             rectangle_height = 50
 
-            rectangle : pygame.Rect = pygame.Rect(self.next_position.x, self.next_position.y, rectangle_width, rectangle_height)
+            rectangle : Rectangle = Rectangle(self.next_position.x, self.next_position.y, rectangle_width, rectangle_height)
 
             server_respond : ServerPacket = self.send_packet(code.POSITION_CHANGED, rectangle)
             if server_respond.validation and server_respond.packet_id + 1 == self.packet_id:
@@ -74,7 +75,7 @@ class Client:
                 rectangle.x = correct_position.x
                 rectangle.y = correct_position.y
 
-            pygame.draw.rect(self.display, pygame.Color("red"), rectangle)
+            pygame.draw.rect(self.display, pygame.Color("red"), pygame.Rect(rectangle.x, rectangle.y, rectangle.width, rectangle.height))
 
             pygame.display.flip()
             self.display.fill((0, 0, 0))
