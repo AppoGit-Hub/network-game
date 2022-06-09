@@ -1,3 +1,4 @@
+import copy
 import socket
 import sys
 import constant
@@ -24,6 +25,7 @@ class Client:
             self.close_client()
 
         self.next_position = Vector(0, 0)
+        self.last_position = self.next_position
 
     def send_packet(self, packet_code, packet_data):
         packet = ClientPacket(self.packet_id, packet_code, packet_data)
@@ -63,19 +65,22 @@ class Client:
             rectangle_height = 50
 
             rectangle : Rectangle = Rectangle(self.next_position.x, self.next_position.y, rectangle_width, rectangle_height)
-
-            server_respond : ServerPacket = self.send_packet(code.POSITION_CHANGED, rectangle)
-            if server_respond.validation and server_respond.packet_id + 1 == self.packet_id:
-                print(f"Position {self.next_position}")
-                pass
-            else:
-                print(f"Position correct {server_respond.correction}")
-                correct_position : Vector = server_respond.correction
-                self.next_position = correct_position
-                rectangle.x = correct_position.x
-                rectangle.y = correct_position.y
+            
+            if self.next_position != self.last_position:
+                server_respond : ServerPacket = self.send_packet(code.POSITION_CHANGED, rectangle)
+                if server_respond.validation and server_respond.packet_id + 1 == self.packet_id:
+                    print(f"Position {self.next_position}")
+                    pass
+                else:
+                    print(f"Position correct {server_respond.correction}")
+                    correct_position : Vector = server_respond.correction
+                    self.next_position = correct_position
+                    rectangle.x = correct_position.x
+                    rectangle.y = correct_position.y
 
             pygame.draw.rect(self.display, pygame.Color("red"), pygame.Rect(rectangle.x, rectangle.y, rectangle.width, rectangle.height))
+
+            self.last_position = copy.copy(self.next_position)
 
             pygame.display.flip()
             self.display.fill((0, 0, 0))
