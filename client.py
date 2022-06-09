@@ -3,23 +3,28 @@ import socket
 import sys
 import constant
 import pickle
-import code
 import pygame
+import network
+import _thread
+import server
+import select
+import packetcode
 from serverpacket import ServerPacket
 from vector import Vector
 from clientpacket import ClientPacket
 from rectangle import Rectangle
 
 class Client:
-    def __init__(self):
+    def __init__(self, socket : socket, server_address : tuple):
         self.packet_id = 0
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.socket = socket
+        self.server_address = server_address
         self.display = pygame.display.set_mode(constant.RESOLUTION)
         self.clock = pygame.time.Clock()
         self.speed = 5
 
         try:
-            server_respond = self.send_packet(code.CONNECT, None)
+            server_respond = self.send_packet(packetcode.CONNECT, None)
         except ConnectionError:
             print("Connection Error Occured")
             self.close_client()
@@ -29,13 +34,13 @@ class Client:
 
     def send_packet(self, packet_code, packet_data):
         packet = ClientPacket(self.packet_id, packet_code, packet_data)
-        self.socket.sendto(pickle.dumps(packet), constant.SERVER_ADDRESS)
+        self.socket.sendto(pickle.dumps(packet), self.server_address)
         respond_server, address_server = self.socket.recvfrom(constant.PACKET_SIZE)
         self.packet_id += 1
         return pickle.loads(respond_server)
     
     def close_connection(self):
-        self.send_packet(code.DISCONNECT, None)
+        self.send_packet(packetcode.DISCONNECT, None)
         self.socket.close()
         self.close_client()
     
@@ -67,12 +72,12 @@ class Client:
             rectangle : Rectangle = Rectangle(self.next_position.x, self.next_position.y, rectangle_width, rectangle_height)
             
             if self.next_position != self.last_position:
-                server_respond : ServerPacket = self.send_packet(code.POSITION_CHANGED, rectangle)
+                server_respond : ServerPacket = self.send_packet(packetcode.POSITION_CHANGED, rectangle)
                 if server_respond.validation and server_respond.packet_id + 1 == self.packet_id:
-                    print(f"Position {self.next_position}")
+                    #print(f"Position {self.next_position}")
                     pass
                 else:
-                    print(f"Position correct {server_respond.correction}")
+                    #print(f"Position correct {server_respond.correction}")
                     correct_position : Vector = server_respond.correction
                     self.next_position = correct_position
                     rectangle.x = correct_position.x
@@ -86,5 +91,24 @@ class Client:
             self.display.fill((0, 0, 0))
         self.close_connection()
 
-client = Client()
-client.main_loop()
+def launch_local_server():
+    local_server = server.launch_server(constant.DEFAULT_SERVER_ADDRESS)
+
+if __name__ == "__main__":
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    client_socket.settimeout(5)
+    client_connect_packet = ClientPacket(0, packetcode.CONNECT, None)
+    client_server_adress = constant.SERVER_ADDRESS
+    
+    print("Finding server")
+    try:
+        print("Connection to server...")
+        server_respond  = network.send_to_server_packet(client_socket, client_connect_packet, client_server_adress)
+    except:
+        print("Connection error. Launching local server")
+        _thread.start_new_thread(launch_local_server, ())
+        client_server_adress = constant.DEFAULT_SERVER_ADDRESS
+
+    print("Lauching client")
+    client = Client(client_socket, client_server_adress)
+    client.main_loop()
